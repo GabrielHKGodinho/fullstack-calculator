@@ -54,3 +54,9 @@ o only step 3 now and stop so i can review and commit
 
 # 7
 do step 4 now. after the tests, run the server and curl the examples from SPEC 4.6, try PORT=9090 too, then stop it with ctrl c and show me the output. stop after that so i can review and commit
+
+# 8
+now plan only the frontend, same as the backend plan: the files you will create, the main types and function signatures, the reducer state and all its actions, how a button press goes to the api and back to the display, and the list of test cases for each part. split it in small steps that i can review and commit one by one. dont write any code yet
+
+# 9
+plan approved, do only step 1 now and stop so i can review and commit

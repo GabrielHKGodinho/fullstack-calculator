@@ -348,7 +348,9 @@ Go server in Docker.
 
 - Backend: `go test ./...`, `go vet ./...`, `gofmt`.
 - Frontend: npm scripts `dev`, `build`, `test`, `coverage`, `lint`,
-  `typecheck`. ESLint with the Vite React-TS defaults.
+  `typecheck`. Linting with oxlint, as configured by the Vite React-TS
+  template (react and typescript plugins, `react/rules-of-hooks` as an
+  error).
 - Root `Makefile` (**lowest priority**) with shortcuts such as `test`,
   `coverage`, `docker-build`, `docker-run`. It only wraps the plain commands;
   nothing requires `make`, because it isn't installed on Windows by default.

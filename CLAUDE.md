@@ -70,4 +70,13 @@ gofmt -l .                    # must print nothing
 go run ./cmd/server           # API on :8080; PORT and STATIC_DIR are optional
 ```
 
-Frontend: to be filled in once it is scaffolded (see "Tooling" in SPEC.md).
+Frontend (run from `frontend/`):
+
+```bash
+npm install                   # once, or after package.json changes
+npm test                      # all tests, once (Vitest)
+npm run lint                  # oxlint
+npm run typecheck             # tsc -b
+npm run build                 # typecheck + production build into dist/
+npm run dev                   # dev server on :5173, proxies /api to :8080
+```

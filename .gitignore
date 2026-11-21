@@ -4,6 +4,7 @@ backend/coverage.out
 # Node
 node_modules/
 frontend/dist/
+frontend/coverage/
 
 # OS / editor
 .DS_Store
