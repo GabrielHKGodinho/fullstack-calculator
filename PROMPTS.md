@@ -60,3 +60,12 @@ now plan only the frontend, same as the backend plan: the files you will create,
 
 # 9
 plan approved, do only step 1 now and stop so i can review and commit
+
+# 10
+do only step 1 now and stop so i can review and commit
+
+# 11
+do only step 2 now and stop so i can review and commit
+
+# 12
+do only step 3 now and stop so i can review and commit
