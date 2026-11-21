@@ -45,3 +45,6 @@ dont write any code yet
 plan approved, just two small changes, run the tests with -race too, and rename mathError to calculatorError
 
 do only step 1 now and stop so i can review and commit
+
+# 5
+do only step 2 now and stop so i can review and commit
