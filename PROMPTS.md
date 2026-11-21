@@ -40,3 +40,8 @@ i want the plan to show the files you will create, the main types and function s
 split it in small steps that i can review and commit one by one, like calculator with its tests first, then httpapi, then cmd/server
 
 dont write any code yet
+
+# 4
+plan approved, just two small changes, run the tests with -race too, and rename mathError to calculatorError
+
+do only step 1 now and stop so i can review and commit
