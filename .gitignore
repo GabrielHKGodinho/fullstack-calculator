@@ -1,0 +1,11 @@
+# Go
+backend/coverage.out
+
+# Node
+node_modules/
+frontend/dist/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
