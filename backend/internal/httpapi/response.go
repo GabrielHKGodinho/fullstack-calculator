@@ -9,12 +9,14 @@ import (
 // change.
 const (
 	codeInvalidJSON       = "INVALID_JSON"
+	codeUnknownField      = "UNKNOWN_FIELD"
 	codeMissingOperands   = "MISSING_OPERANDS"
 	codeNullOperand       = "NULL_OPERAND"
 	codeWrongOperandCount = "WRONG_OPERAND_COUNT"
 	codeUnknownOperation  = "UNKNOWN_OPERATION"
 	codeNotFound          = "NOT_FOUND"
 	codeMethodNotAllowed  = "METHOD_NOT_ALLOWED"
+	codeBodyTooLarge      = "BODY_TOO_LARGE"
 	codeDivisionByZero    = "DIVISION_BY_ZERO"
 	codeSqrtOfNegative    = "SQRT_OF_NEGATIVE"
 	codeResultNotFinite   = "RESULT_NOT_FINITE"

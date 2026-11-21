@@ -18,20 +18,23 @@ import (
 // The tests use literal codes and paths, not the package constants, so that a
 // change to the API contract shows up as a failing test.
 
-func TestHandler(t *testing.T) {
-	tests := []struct {
-		name        string
-		method      string
-		path        string
-		body        string
-		contentType string
+// apiCase is one request to the API handler and the response it must get.
+type apiCase struct {
+	name        string
+	method      string
+	path        string
+	body        string
+	contentType string
 
-		wantStatus  int
-		wantResult  float64 // checked when wantCode is ""
-		wantCode    string
-		wantMessage string // checked when not ""
-		wantAllow   string
-	}{
+	wantStatus  int
+	wantResult  float64 // checked when wantCode is ""
+	wantCode    string
+	wantMessage string // checked when not ""
+	wantAllow   string
+}
+
+func TestHandler(t *testing.T) {
+	runCases(t, []apiCase{
 		// Success, one per operation.
 		{name: "add", method: "POST", path: "/api/v1/add", body: `{"operands": [10, 2]}`, wantStatus: 200, wantResult: 12},
 		{name: "subtract", method: "POST", path: "/api/v1/subtract", body: `{"operands": [10, 2]}`, wantStatus: 200, wantResult: 8},
@@ -65,10 +68,7 @@ func TestHandler(t *testing.T) {
 		{name: "DELETE", method: "DELETE", path: "/api/v1/add", wantStatus: 405, wantCode: "METHOD_NOT_ALLOWED", wantAllow: "POST"},
 		{name: "PATCH", method: "PATCH", path: "/api/v1/add", body: `{"operands": [1, 2]}`, wantStatus: 405, wantCode: "METHOD_NOT_ALLOWED", wantAllow: "POST"},
 
-		// 400 INVALID_JSON (the full set of decoding cases comes with the strict decoder)
-		{name: "empty body", method: "POST", path: "/api/v1/add", body: ``, wantStatus: 400, wantCode: "INVALID_JSON"},
-		{name: "invalid syntax", method: "POST", path: "/api/v1/add", body: `{`, wantStatus: 400, wantCode: "INVALID_JSON"},
-		{name: "operands of the wrong type", method: "POST", path: "/api/v1/add", body: `{"operands": "1,2"}`, wantStatus: 400, wantCode: "INVALID_JSON"},
+		// Body size and decoding errors are in request_test.go.
 
 		// 400 MISSING_OPERANDS
 		{name: "empty object", method: "POST", path: "/api/v1/add", body: `{}`,
@@ -105,13 +105,21 @@ func TestHandler(t *testing.T) {
 		// The first failing check wins.
 		{name: "method before body", method: "GET", path: "/api/v1/add", body: `{`, wantStatus: 405, wantCode: "METHOD_NOT_ALLOWED", wantAllow: "POST"},
 		{name: "path before body", method: "POST", path: "/api/v1/modulo", body: `{`, wantStatus: 404, wantCode: "UNKNOWN_OPERATION"},
+		{name: "method before body size", method: "PUT", path: "/api/v1/add", body: oversizedBody, wantStatus: 405, wantCode: "METHOD_NOT_ALLOWED", wantAllow: "POST"},
+		{name: "unknown field before operands", method: "POST", path: "/api/v1/add", body: `{"operands": [1, null], "foo": 1}`, wantStatus: 400, wantCode: "UNKNOWN_FIELD"},
 		{name: "null operand before count", method: "POST", path: "/api/v1/add", body: `{"operands": [null, 1, 2]}`, wantStatus: 400, wantCode: "NULL_OPERAND"},
 		{name: "count before math", method: "POST", path: "/api/v1/divide", body: `{"operands": [1, 0, 0]}`, wantStatus: 400, wantCode: "WRONG_OPERAND_COUNT"},
-	}
+	})
+}
 
+// runCases sends each case to a new API handler and checks the status, the
+// Content-Type and Allow headers, and that the body is exactly a result or an
+// error with the expected code.
+func runCases(t *testing.T, cases []apiCase) {
+	t.Helper()
 	h := New(discardLogger())
 
-	for _, tc := range tests {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body))
 			if tc.contentType != "" {

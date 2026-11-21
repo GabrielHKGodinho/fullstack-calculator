@@ -53,7 +53,7 @@ func (h handler) handleOperation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req, apiErr := decodeRequest(r)
+	req, apiErr := decodeRequest(w, r)
 	if apiErr != nil {
 		writeError(w, apiErr)
 		return
