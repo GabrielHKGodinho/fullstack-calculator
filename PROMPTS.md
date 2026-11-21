@@ -51,3 +51,6 @@ do only step 2 now and stop so i can review and commit
 
 # 6
 o only step 3 now and stop so i can review and commit
+
+# 7
+do step 4 now. after the tests, run the server and curl the examples from SPEC 4.6, try PORT=9090 too, then stop it with ctrl c and show me the output. stop after that so i can review and commit

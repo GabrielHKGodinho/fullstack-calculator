@@ -60,4 +60,14 @@ truth; if code and spec disagree, ask before changing either.
 
 ## Commands
 
-To be filled in once the projects are scaffolded (see "Tooling" in SPEC.md).
+Backend (run from `backend/`):
+
+```bash
+go test ./...                 # all tests
+go test -race ./...           # all tests with the race detector
+go vet ./...
+gofmt -l .                    # must print nothing
+go run ./cmd/server           # API on :8080; PORT and STATIC_DIR are optional
+```
+
+Frontend: to be filled in once it is scaffolded (see "Tooling" in SPEC.md).
