@@ -24,8 +24,8 @@ time runs out:
 2. Frontend: button-driven calculator, API client, error handling,
    responsive layout, tests.
 3. README (with plain commands), PROMPTS.md.
-4. Dockerfile.
-5. Coverage report, generated once right before submission.
+4. Coverage report, generated once right before submission.
+5. Dockerfile.
 6. **Lowest priority:** keyboard support (§4.3) and the Makefile (§5).
 
 ## 3. Repository layout
