@@ -1,0 +1,616 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>server: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/GabrielHKGodinho/fullstack-calculator/backend/cmd/server/main.go (17.6%)</option>
+				
+				<option value="file1">github.com/GabrielHKGodinho/fullstack-calculator/backend/internal/calculator/calculator.go (100.0%)</option>
+				
+				<option value="file2">github.com/GabrielHKGodinho/fullstack-calculator/backend/internal/httpapi/handler.go (100.0%)</option>
+				
+				<option value="file3">github.com/GabrielHKGodinho/fullstack-calculator/backend/internal/httpapi/request.go (100.0%)</option>
+				
+				<option value="file4">github.com/GabrielHKGodinho/fullstack-calculator/backend/internal/httpapi/response.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">// Command server runs the calculator API. It listens on :8080 (or :$PORT)
+// and, when STATIC_DIR is set, also serves the built frontend from that
+// directory. It shuts down gracefully on SIGINT or SIGTERM.
+package main
+
+import (
+        "context"
+        "fmt"
+        "log/slog"
+        "net"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "github.com/GabrielHKGodinho/fullstack-calculator/backend/internal/httpapi"
+)
+
+const (
+        defaultPort     = "8080"
+        shutdownTimeout = 10 * time.Second
+)
+
+func main() <span class="cov0" title="0">{
+        logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+        if err := run(logger); err != nil </span><span class="cov0" title="0">{
+                logger.Error("server failed", "error", err)
+                os.Exit(1)
+        }</span>
+}
+
+// run serves until SIGINT or SIGTERM, then shuts down gracefully.
+func run(logger *slog.Logger) error <span class="cov0" title="0">{
+        port := os.Getenv("PORT")
+        if port == "" </span><span class="cov0" title="0">{
+                port = defaultPort
+        }</span>
+        <span class="cov0" title="0">staticDir := os.Getenv("STATIC_DIR")
+
+        ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+        defer stop()
+
+        srv := newServer(":"+port, newHandler(logger, staticDir))
+
+        // Listen before logging, so "listening" is only logged once the port is
+        // actually bound (a busy port fails here instead).
+        ln, err := net.Listen("tcp", srv.Addr)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">logger.Info("listening", "addr", ln.Addr().String(), "static_dir", staticDir)
+
+        serveErr := make(chan error, 1)
+        go func() </span><span class="cov0" title="0">{ serveErr &lt;- srv.Serve(ln) }</span>()
+
+        <span class="cov0" title="0">select </span>{
+        case err := &lt;-serveErr:<span class="cov0" title="0">
+                return err</span>
+        case &lt;-ctx.Done():<span class="cov0" title="0"></span>
+        }
+
+        // Restore default signal handling, so a second Ctrl-C kills the process
+        // right away instead of waiting for the shutdown.
+        <span class="cov0" title="0">stop()
+        logger.Info("shutting down")
+
+        shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+        defer cancel()
+        if err := srv.Shutdown(shutdownCtx); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("shutdown: %w", err)
+        }</span>
+        <span class="cov0" title="0">logger.Info("server stopped")
+        return nil</span>
+}
+
+// newHandler routes /api/ to the API. When staticDir is set, every other path
+// is served from that directory; otherwise those paths get net/http's plain
+// 404.
+func newHandler(logger *slog.Logger, staticDir string) http.Handler <span class="cov8" title="1">{
+        mux := http.NewServeMux()
+        mux.Handle("/api/", httpapi.New(logger))
+        if staticDir != "" </span><span class="cov8" title="1">{
+                mux.Handle("/", http.FileServer(http.Dir(staticDir)))
+        }</span>
+        <span class="cov8" title="1">return mux</span>
+}
+
+// newServer returns an http.Server with explicit timeouts, so slow or idle
+// clients cannot hold connections open forever.
+func newServer(addr string, h http.Handler) *http.Server <span class="cov8" title="1">{
+        return &amp;http.Server{
+                Addr:              addr,
+                Handler:           h,
+                ReadHeaderTimeout: 5 * time.Second,
+                ReadTimeout:       10 * time.Second,
+                WriteTimeout:      10 * time.Second,
+                IdleTimeout:       60 * time.Second,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Package calculator implements the calculator's operations. It knows nothing
+// about HTTP: callers look up an operation by name, apply it to its operands
+// and check the returned error against the sentinel errors below.
+package calculator
+
+import (
+        "errors"
+        "math"
+)
+
+// Sentinel errors returned by Lookup and Operation.Apply. Check them with
+// errors.Is.
+var (
+        ErrUnknownOperation  = errors.New("unknown operation")
+        ErrWrongOperandCount = errors.New("wrong number of operands")
+        ErrDivisionByZero    = errors.New("division by zero")
+        ErrSqrtOfNegative    = errors.New("square root of a negative number")
+        ErrResultNotFinite   = errors.New("result is not finite")
+)
+
+// Operation is a named calculator operation that takes Arity operands.
+// Values are obtained from Lookup; the zero value is not a valid operation.
+type Operation struct {
+        Name  string
+        Arity int
+        fn    func(x []float64) (float64, error)
+}
+
+var operations = map[string]Operation{
+        "add":        {Name: "add", Arity: 2, fn: add},
+        "subtract":   {Name: "subtract", Arity: 2, fn: subtract},
+        "multiply":   {Name: "multiply", Arity: 2, fn: multiply},
+        "divide":     {Name: "divide", Arity: 2, fn: divide},
+        "power":      {Name: "power", Arity: 2, fn: power},
+        "sqrt":       {Name: "sqrt", Arity: 1, fn: sqrt},
+        "percentage": {Name: "percentage", Arity: 2, fn: percentage},
+}
+
+// Lookup returns the operation with the given name. Names are matched
+// exactly (case-sensitive). An unknown name returns ErrUnknownOperation.
+func Lookup(name string) (Operation, error) <span class="cov8" title="1">{
+        op, ok := operations[name]
+        if !ok </span><span class="cov8" title="1">{
+                return Operation{}, ErrUnknownOperation
+        }</span>
+        <span class="cov8" title="1">return op, nil</span>
+}
+
+// Apply runs the operation on operands. It returns ErrWrongOperandCount if
+// len(operands) is not the operation's arity, an operation-specific error
+// (ErrDivisionByZero, ErrSqrtOfNegative), or ErrResultNotFinite if the
+// result is ±Inf or NaN. A non-nil error always comes with a zero result.
+func (op Operation) Apply(operands []float64) (float64, error) <span class="cov8" title="1">{
+        if op.fn == nil </span><span class="cov8" title="1">{
+                return 0, ErrUnknownOperation
+        }</span>
+        <span class="cov8" title="1">if len(operands) != op.Arity </span><span class="cov8" title="1">{
+                return 0, ErrWrongOperandCount
+        }</span>
+        <span class="cov8" title="1">result, err := op.fn(operands)
+        if err != nil </span><span class="cov8" title="1">{
+                return 0, err
+        }</span>
+        // JSON cannot encode ±Inf or NaN, so none may leave this package.
+        <span class="cov8" title="1">if math.IsInf(result, 0) || math.IsNaN(result) </span><span class="cov8" title="1">{
+                return 0, ErrResultNotFinite
+        }</span>
+        <span class="cov8" title="1">return result, nil</span>
+}
+
+func add(x []float64) (float64, error)      <span class="cov8" title="1">{ return x[0] + x[1], nil }</span>
+func subtract(x []float64) (float64, error) <span class="cov8" title="1">{ return x[0] - x[1], nil }</span>
+func multiply(x []float64) (float64, error) <span class="cov8" title="1">{ return x[0] * x[1], nil }</span>
+func power(x []float64) (float64, error)    <span class="cov8" title="1">{ return math.Pow(x[0], x[1]), nil }</span>
+
+func divide(x []float64) (float64, error) <span class="cov8" title="1">{
+        // b == 0 is also true for -0, so 1/-0 and 0/0 are rejected here too.
+        if x[1] == 0 </span><span class="cov8" title="1">{
+                return 0, ErrDivisionByZero
+        }</span>
+        <span class="cov8" title="1">return x[0] / x[1], nil</span>
+}
+
+func sqrt(x []float64) (float64, error) <span class="cov8" title="1">{
+        // -0 is not &lt; 0, so sqrt(-0) = -0 is allowed, as in math.Sqrt.
+        if x[0] &lt; 0 </span><span class="cov8" title="1">{
+                return 0, ErrSqrtOfNegative
+        }</span>
+        <span class="cov8" title="1">return math.Sqrt(x[0]), nil</span>
+}
+
+// percentage returns a% of b.
+func percentage(x []float64) (float64, error) <span class="cov8" title="1">{ return x[0] * x[1] / 100, nil }</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// Package httpapi exposes the calculator as a JSON REST API. It owns
+// everything HTTP: routing, the method check, body decoding and validation,
+// mapping calculator errors to status codes, and writing JSON responses.
+package httpapi
+
+import (
+        "errors"
+        "fmt"
+        "log/slog"
+        "net/http"
+
+        "github.com/GabrielHKGodinho/fullstack-calculator/backend/internal/calculator"
+)
+
+// New returns the API handler. It serves POST /api/v1/{operation} and answers
+// every other path under /api/ with a JSON 404. logger is used only for
+// unexpected errors and must not be nil.
+func New(logger *slog.Logger) http.Handler <span class="cov8" title="1">{
+        h := handler{logger: logger}
+        mux := http.NewServeMux()
+        // The patterns have no method on purpose: handleOperation checks the
+        // method itself so that the 405 response has a JSON body.
+        mux.HandleFunc("/api/v1/{operation}", h.handleOperation)
+        mux.HandleFunc("/api/", h.handleNotFound)
+        return mux
+}</span>
+
+type handler struct {
+        logger *slog.Logger
+}
+
+// handleOperation runs the checks of SPEC §4.4 in order; the first failure
+// wins.
+func (h handler) handleOperation(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        name := r.PathValue("operation")
+        op, err := calculator.Lookup(name)
+        if err != nil </span><span class="cov8" title="1">{
+                writeError(w, &amp;apiError{
+                        status:  http.StatusNotFound,
+                        code:    codeUnknownOperation,
+                        message: fmt.Sprintf("unknown operation %q", name),
+                })
+                return
+        }</span>
+
+        <span class="cov8" title="1">if r.Method != http.MethodPost </span><span class="cov8" title="1">{
+                w.Header().Set("Allow", http.MethodPost)
+                writeError(w, &amp;apiError{
+                        status:  http.StatusMethodNotAllowed,
+                        code:    codeMethodNotAllowed,
+                        message: fmt.Sprintf("method %s not allowed, use POST", r.Method),
+                })
+                return
+        }</span>
+
+        <span class="cov8" title="1">req, apiErr := decodeRequest(w, r)
+        if apiErr != nil </span><span class="cov8" title="1">{
+                writeError(w, apiErr)
+                return
+        }</span>
+
+        <span class="cov8" title="1">operands, apiErr := operandValues(req.Operands)
+        if apiErr != nil </span><span class="cov8" title="1">{
+                writeError(w, apiErr)
+                return
+        }</span>
+
+        <span class="cov8" title="1">result, err := op.Apply(operands)
+        if err != nil </span><span class="cov8" title="1">{
+                writeError(w, h.calculatorError(op, len(operands), err))
+                return
+        }</span>
+
+        <span class="cov8" title="1">writeJSON(w, http.StatusOK, resultResponse{Result: result})</span>
+}
+
+func (h handler) handleNotFound(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        writeError(w, &amp;apiError{
+                status:  http.StatusNotFound,
+                code:    codeNotFound,
+                message: "not found",
+        })
+}</span>
+
+// calculatorError maps an error from op.Apply, called with n operands, to an
+// API error. An error it does not know is a bug: it is logged and becomes a
+// 500.
+func (h handler) calculatorError(op calculator.Operation, n int, err error) *apiError <span class="cov8" title="1">{
+        switch </span>{
+        case errors.Is(err, calculator.ErrWrongOperandCount):<span class="cov8" title="1">
+                noun := "operands"
+                if op.Arity == 1 </span><span class="cov8" title="1">{
+                        noun = "operand"
+                }</span>
+                <span class="cov8" title="1">return &amp;apiError{
+                        status:  http.StatusBadRequest,
+                        code:    codeWrongOperandCount,
+                        message: fmt.Sprintf("%s takes %d %s, got %d", op.Name, op.Arity, noun, n),
+                }</span>
+        case errors.Is(err, calculator.ErrDivisionByZero):<span class="cov8" title="1">
+                return &amp;apiError{
+                        status:  http.StatusUnprocessableEntity,
+                        code:    codeDivisionByZero,
+                        message: "cannot divide by zero",
+                }</span>
+        case errors.Is(err, calculator.ErrSqrtOfNegative):<span class="cov8" title="1">
+                return &amp;apiError{
+                        status:  http.StatusUnprocessableEntity,
+                        code:    codeSqrtOfNegative,
+                        message: "cannot take the square root of a negative number",
+                }</span>
+        case errors.Is(err, calculator.ErrResultNotFinite):<span class="cov8" title="1">
+                return &amp;apiError{
+                        status:  http.StatusUnprocessableEntity,
+                        code:    codeResultNotFinite,
+                        message: "result is too large or undefined",
+                }</span>
+        default:<span class="cov8" title="1">
+                h.logger.Error("unexpected calculator error", "operation", op.Name, "error", err)
+                return &amp;apiError{
+                        status:  http.StatusInternalServerError,
+                        code:    codeInternalError,
+                        message: "internal server error",
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package httpapi
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "io"
+        "net/http"
+        "strings"
+)
+
+// maxBodyBytes is the largest request body accepted (1 MB).
+const maxBodyBytes = 1 &lt;&lt; 20
+
+// calculateRequest is the body of POST /api/v1/{operation}.
+type calculateRequest struct {
+        // Pointers keep a JSON null element distinguishable from 0.
+        Operands []*float64 `json:"operands"`
+}
+
+// decodeRequest decodes the request body, which must be a single JSON object
+// of at most maxBodyBytes with no field other than "operands". Only
+// whitespace may follow the object.
+//
+// Errors: BODY_TOO_LARGE (413), UNKNOWN_FIELD (400), and INVALID_JSON (400)
+// for everything else (empty body, invalid syntax, wrong types, numbers
+// outside the float64 range, trailing data).
+func decodeRequest(w http.ResponseWriter, r *http.Request) (calculateRequest, *apiError) <span class="cov8" title="1">{
+        dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBodyBytes))
+        dec.DisallowUnknownFields()
+
+        var req calculateRequest
+        if err := dec.Decode(&amp;req); err != nil </span><span class="cov8" title="1">{
+                if e := bodyTooLarge(err); e != nil </span><span class="cov8" title="1">{
+                        return calculateRequest{}, e
+                }</span>
+                <span class="cov8" title="1">if e := unknownField(err); e != nil </span><span class="cov8" title="1">{
+                        return calculateRequest{}, e
+                }</span>
+                <span class="cov8" title="1">return calculateRequest{}, invalidJSON()</span>
+        }
+
+        // Anything but whitespace after the object is trailing data. A
+        // RawMessage accepts any value, so a second object counts as trailing
+        // data rather than as an unknown field.
+        <span class="cov8" title="1">var extra json.RawMessage
+        if err := dec.Decode(&amp;extra); !errors.Is(err, io.EOF) </span><span class="cov8" title="1">{
+                if e := bodyTooLarge(err); e != nil </span><span class="cov8" title="1">{
+                        return calculateRequest{}, e
+                }</span>
+                <span class="cov8" title="1">return calculateRequest{}, invalidJSON()</span>
+        }
+
+        <span class="cov8" title="1">return req, nil</span>
+}
+
+// bodyTooLarge returns a BODY_TOO_LARGE error if err comes from the
+// http.MaxBytesReader limit, and nil otherwise.
+func bodyTooLarge(err error) *apiError <span class="cov8" title="1">{
+        var maxBytesErr *http.MaxBytesError
+        if !errors.As(err, &amp;maxBytesErr) </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return &amp;apiError{
+                status:  http.StatusRequestEntityTooLarge,
+                code:    codeBodyTooLarge,
+                message: "request body must not exceed 1MB",
+        }</span>
+}
+
+// unknownField returns an UNKNOWN_FIELD error if err comes from
+// DisallowUnknownFields, and nil otherwise. encoding/json has no typed error
+// for this case, so its message is the only way to tell it apart.
+func unknownField(err error) *apiError <span class="cov8" title="1">{
+        field, ok := strings.CutPrefix(err.Error(), "json: unknown field ")
+        if !ok </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return &amp;apiError{
+                status:  http.StatusBadRequest,
+                code:    codeUnknownField,
+                message: fmt.Sprintf("unknown field %s", field), // field is already quoted
+        }</span>
+}
+
+func invalidJSON() *apiError <span class="cov8" title="1">{
+        return &amp;apiError{
+                status:  http.StatusBadRequest,
+                code:    codeInvalidJSON,
+                message: "request body must be valid JSON",
+        }
+}</span>
+
+// operandValues checks that operands is present and has no null elements,
+// and returns its values. The operand count is checked by calculator.
+func operandValues(raw []*float64) ([]float64, *apiError) <span class="cov8" title="1">{
+        if raw == nil </span><span class="cov8" title="1">{
+                return nil, &amp;apiError{
+                        status:  http.StatusBadRequest,
+                        code:    codeMissingOperands,
+                        message: `"operands" is required`,
+                }
+        }</span>
+        <span class="cov8" title="1">values := make([]float64, len(raw))
+        for i, p := range raw </span><span class="cov8" title="1">{
+                if p == nil </span><span class="cov8" title="1">{
+                        return nil, &amp;apiError{
+                                status:  http.StatusBadRequest,
+                                code:    codeNullOperand,
+                                message: "operands must not be null",
+                        }
+                }</span>
+                <span class="cov8" title="1">values[i] = *p</span>
+        }
+        <span class="cov8" title="1">return values, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package httpapi
+
+import (
+        "encoding/json"
+        "net/http"
+)
+
+// Error codes are the stable API contract; messages are for humans and may
+// change.
+const (
+        codeInvalidJSON       = "INVALID_JSON"
+        codeUnknownField      = "UNKNOWN_FIELD"
+        codeMissingOperands   = "MISSING_OPERANDS"
+        codeNullOperand       = "NULL_OPERAND"
+        codeWrongOperandCount = "WRONG_OPERAND_COUNT"
+        codeUnknownOperation  = "UNKNOWN_OPERATION"
+        codeNotFound          = "NOT_FOUND"
+        codeMethodNotAllowed  = "METHOD_NOT_ALLOWED"
+        codeBodyTooLarge      = "BODY_TOO_LARGE"
+        codeDivisionByZero    = "DIVISION_BY_ZERO"
+        codeSqrtOfNegative    = "SQRT_OF_NEGATIVE"
+        codeResultNotFinite   = "RESULT_NOT_FINITE"
+        codeInternalError     = "INTERNAL_ERROR"
+)
+
+// resultResponse is the body of a successful calculation.
+type resultResponse struct {
+        Result float64 `json:"result"`
+}
+
+// errorResponse is the body of every error response.
+type errorResponse struct {
+        Error errorBody `json:"error"`
+}
+
+type errorBody struct {
+        Code    string `json:"code"`
+        Message string `json:"message"`
+}
+
+// apiError is a failed request: the HTTP status plus the code and message
+// that go into the error body.
+type apiError struct {
+        status  int
+        code    string
+        message string
+}
+
+// writeJSON writes v as a JSON response with the given status.
+func writeJSON(w http.ResponseWriter, status int, v any) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(status)
+        // The values written here are strings and finite floats, so encoding
+        // can only fail if the client has gone away. There is nothing useful
+        // to do about that, so the error is ignored.
+        _ = json.NewEncoder(w).Encode(v)
+}</span>
+
+// writeError writes e as a JSON error response.
+func writeError(w http.ResponseWriter, e *apiError) <span class="cov8" title="1">{
+        writeJSON(w, e.status, errorResponse{Error: errorBody{Code: e.code, Message: e.message}})
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
