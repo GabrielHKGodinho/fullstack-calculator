@@ -1,0 +1,13 @@
+# Send only the two source folders to the build, so nothing else in the repo
+# (git history, local settings, docs) reaches the image or busts the cache.
+*
+!backend/
+!frontend/
+
+# Built or installed locally; the image builds its own.
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+backend/coverage.out
+
+**/.DS_Store
