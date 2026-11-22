@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
-import { ApiError, calculate, NETWORK_ERROR_MESSAGE } from './client.ts'
+import { ApiError, calculate, NETWORK_ERROR_MESSAGE, REQUEST_TIMEOUT_MS } from './client.ts'
 
 let fetchMock: Mock<typeof fetch>
 
@@ -9,6 +9,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -16,6 +17,15 @@ function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+/** A fetch that never answers and rejects with an AbortError once its signal aborts. */
+function hangingFetch(_url: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  return new Promise((_, reject) => {
+    init?.signal?.addEventListener('abort', () => {
+      reject(new DOMException('This operation was aborted', 'AbortError'))
+    })
   })
 }
 
@@ -106,17 +116,54 @@ describe('calculate', () => {
     expectApiError(error, 'NETWORK_ERROR', NETWORK_ERROR_MESSAGE, status)
   })
 
-  it('passes the signal to fetch and rethrows the abort error as is', async () => {
+  it('rethrows the abort error as is when the caller aborts', async () => {
+    fetchMock.mockImplementation(hangingFetch)
     const controller = new AbortController()
-    const abortError = new DOMException('This operation was aborted', 'AbortError')
-    fetchMock.mockImplementation(() => {
-      controller.abort()
-      return Promise.reject(abortError)
+
+    const result = rejection(calculate('add', [1, 2], controller.signal))
+    controller.abort()
+    const error = await result
+
+    expect(error).toBeInstanceOf(DOMException)
+    expect((error as DOMException).name).toBe('AbortError')
+    expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true)
+  })
+
+  describe('timeout', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
     })
 
-    const error = await rejection(calculate('add', [1, 2], controller.signal))
+    it(`rejects with NETWORK_ERROR when the backend does not answer within ${REQUEST_TIMEOUT_MS} ms`, async () => {
+      fetchMock.mockImplementation(hangingFetch)
+      let settled = false
+      const result = rejection(calculate('add', [1, 2], new AbortController().signal)).finally(() => {
+        settled = true
+      })
 
-    expect(error).toBe(abortError)
-    expect(fetchMock.mock.calls[0][1]?.signal).toBe(controller.signal)
+      await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS - 1)
+      expect(settled).toBe(false)
+      expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expectApiError(await result, 'NETWORK_ERROR', NETWORK_ERROR_MESSAGE, 0)
+    })
+
+    it('also times out without a caller signal', async () => {
+      fetchMock.mockImplementation(hangingFetch)
+
+      const result = rejection(calculate('add', [1, 2]))
+      await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS)
+
+      expectApiError(await result, 'NETWORK_ERROR', NETWORK_ERROR_MESSAGE, 0)
+    })
+
+    it('clears the timer once the request settles', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(200, { result: 3 }))
+
+      await expect(calculate('add', [1, 2])).resolves.toBe(3)
+
+      expect(vi.getTimerCount()).toBe(0)
+    })
   })
 })
