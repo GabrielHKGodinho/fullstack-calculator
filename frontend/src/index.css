@@ -2,6 +2,38 @@
   color-scheme: light dark;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.4;
+
+  --page-bg: #f4f4f5;
+  --text: #18181b;
+  --muted: #52525b;
+  --display-bg: #ffffff;
+  --error: #b91c1c;
+  --focus: #2563eb;
+  --key-digit-bg: #ffffff;
+  --key-function-bg: #e4e4e7;
+  --key-operator-bg: #dbeafe;
+  --key-operator-text: #1e3a8a;
+  --key-equals-bg: #2563eb;
+  --key-equals-text: #ffffff;
+  --key-hover: brightness(0.93);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #18181b;
+    --text: #f4f4f5;
+    --muted: #a1a1aa;
+    --display-bg: #27272a;
+    --error: #f87171;
+    --focus: #60a5fa;
+    --key-digit-bg: #3f3f46;
+    --key-function-bg: #52525b;
+    --key-operator-bg: #1e3a8a;
+    --key-operator-text: #dbeafe;
+    --key-equals-bg: #3b82f6;
+    --key-equals-text: #ffffff;
+    --key-hover: brightness(1.15);
+  }
 }
 
 *,
@@ -13,4 +45,101 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--text);
+}
+
+/* Display */
+
+.display {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--display-bg);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.display__secondary {
+  min-height: 1.5rem;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+/* The line keeps the height of the largest size, so the keypad does not jump. */
+.display__main {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 3rem;
+  font-size: 2.5rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.display__main--small {
+  font-size: 1.75rem;
+}
+
+.display__main--tiny {
+  font-size: 1.25rem;
+}
+
+.display__main--error {
+  color: var(--error);
+}
+
+/* Keypad */
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.button {
+  min-height: 44px;
+  height: 3.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: var(--key-digit-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: opacity 0.1s;
+}
+
+.button--function {
+  background: var(--key-function-bg);
+}
+
+.button--operator {
+  background: var(--key-operator-bg);
+  color: var(--key-operator-text);
+}
+
+.button--equals {
+  background: var(--key-equals-bg);
+  color: var(--key-equals-text);
+}
+
+.button--wide {
+  grid-column: span 2;
+}
+
+.button:hover:not(:disabled) {
+  filter: var(--key-hover);
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Most requests take a few milliseconds, so the fade waits a moment to avoid a flicker. */
+.button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+  transition: opacity 0.1s 0.2s;
 }
