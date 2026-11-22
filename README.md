@@ -21,6 +21,7 @@ Operations: add, subtract, multiply, divide, power, square root and percentage.
 - Node.js 22.13 or newer on 22, or Node.js 24, with npm. jsdom needs 22.13,
   and Vitest doesn't support Node 25.
 - Docker (optional)
+- All commands below start from the repository root.
 
 ## Run in development
 
