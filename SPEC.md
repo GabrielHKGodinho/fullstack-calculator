@@ -237,7 +237,9 @@ curl -s localhost:8080/api/v1/add
 
 - **The frontend does no arithmetic and parses no expressions.** Every
   operation is a single request to the backend. Only one request is in flight
-  at a time; input is ignored (and the keypad disabled) while it is pending.
+  at a time; input is ignored while it is pending. The keypad is disabled with
+  `aria-disabled`, not the native `disabled` attribute: the keys stay
+  focusable and ignore presses, so keyboard focus isn't lost on each request.
 - Building the entry string (digits, `.`, sign toggle, backspace) is input
   editing, not math. The entry is turned into a number with `Number()` only
   to send it.
@@ -304,6 +306,8 @@ Layout: a display (with a small secondary line showing the pending
   error; the calculator enters an error state where the next digit or `C`
   resets it.
 - Network failure / non-JSON response → "Can't reach the calculator service".
+- A request with no answer after 10 seconds is abandoned and shows the same
+  network message, so a hung backend can't keep the keypad disabled.
 - The display region is `aria-live="polite"` so results and errors are
   announced.
 

@@ -7,6 +7,12 @@ interface ButtonProps {
   variant: ButtonVariant
   /** Spans two keypad columns. */
   wide?: boolean
+  /**
+   * Marks the key unavailable with aria-disabled and ignores presses. The
+   * native disabled attribute is not used because the browser drops focus
+   * from a button when it becomes disabled, which loses a keyboard user's
+   * place on every request.
+   */
   disabled: boolean
   onPress: () => void
 }
@@ -18,8 +24,12 @@ export function Button({ label, ariaLabel, variant, wide = false, disabled, onPr
       type="button"
       className={className}
       aria-label={ariaLabel}
-      disabled={disabled}
-      onClick={onPress}
+      aria-disabled={disabled}
+      onClick={() => {
+        if (!disabled) {
+          onPress()
+        }
+      }}
     >
       {label}
     </button>

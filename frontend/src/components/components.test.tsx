@@ -57,14 +57,34 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toHaveClass('button', 'button--operator', 'button--wide')
   })
 
-  it('does not call onPress when disabled', async () => {
+  it('is not marked disabled when enabled', () => {
+    render(<Button label="7" variant="digit" disabled={false} onPress={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: '7' })).toHaveAttribute('aria-disabled', 'false')
+  })
+
+  it('is marked with aria-disabled and ignores clicks when disabled', async () => {
     const onPress = vi.fn()
     render(<Button label="7" variant="digit" disabled onPress={onPress} />)
 
     const button = screen.getByRole('button', { name: '7' })
     await userEvent.click(button)
 
-    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('aria-disabled', 'true')
+    expect(button).not.toHaveAttribute('disabled')
+    expect(onPress).not.toHaveBeenCalled()
+  })
+
+  it('keeps focus and ignores Enter and Space when disabled', async () => {
+    const user = userEvent.setup()
+    const onPress = vi.fn()
+    render(<Button label="7" variant="digit" disabled onPress={onPress} />)
+
+    await user.tab()
+    await user.keyboard('{Enter}')
+    await user.keyboard(' ')
+
+    expect(screen.getByRole('button', { name: '7' })).toHaveFocus()
     expect(onPress).not.toHaveBeenCalled()
   })
 })
@@ -111,15 +131,17 @@ describe('Keypad', () => {
     expect(wide.map((button) => button.getAttribute('aria-label'))).toEqual(['square root', 'power'])
   })
 
-  it('disables every button while disabled', async () => {
+  it('marks every button aria-disabled and sends nothing while disabled', async () => {
     const onPress = vi.fn()
     render(<Keypad onPress={onPress} disabled />)
 
     const buttons = screen.getAllByRole('button')
     for (const button of buttons) {
-      expect(button).toBeDisabled()
+      expect(button).toHaveAttribute('aria-disabled', 'true')
     }
-    await userEvent.click(screen.getByRole('button', { name: 'equals' }))
+    for (const button of buttons) {
+      await userEvent.click(button)
+    }
     expect(onPress).not.toHaveBeenCalled()
   })
 })

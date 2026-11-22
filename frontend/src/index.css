@@ -49,6 +49,31 @@ body {
   color: var(--text);
 }
 
+/* Page layout */
+
+.app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.calculator {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.calculator__title {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 /* Display */
 
 .display {
@@ -128,7 +153,7 @@ body {
   grid-column: span 2;
 }
 
-.button:hover:not(:disabled) {
+.button:hover:not([aria-disabled='true']) {
   filter: var(--key-hover);
 }
 
@@ -137,8 +162,11 @@ body {
   outline-offset: 2px;
 }
 
-/* Most requests take a few milliseconds, so the fade waits a moment to avoid a flicker. */
-.button:disabled {
+/*
+ * Keys are marked with aria-disabled, not disabled, so they keep focus.
+ * Most requests take a few milliseconds, so the fade waits a moment to avoid a flicker.
+ */
+.button[aria-disabled='true'] {
   cursor: progress;
   opacity: 0.6;
   transition: opacity 0.1s 0.2s;

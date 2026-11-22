@@ -10,3 +10,6 @@ frontend/coverage/
 .DS_Store
 .idea/
 .vscode/
+
+# Claude Code (local preview settings)
+.claude/
