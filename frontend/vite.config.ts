@@ -18,9 +18,15 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      // The HTML report goes in reportsDirectory and the text table next to
+      // it, so the committed report is docs/coverage/frontend/ plus
+      // docs/coverage/frontend.txt (SPEC 8). The file lists every file and has
+      // no colors or local paths, unlike the console output.
+      reportsDirectory: './coverage/frontend',
+      reporter: ['text', 'html', ['text', { file: '../frontend.txt', skipFull: false }]],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/main.tsx', 'src/test/**', 'src/**/*.test.{ts,tsx}'],
+      // types.ts only declares types, so it has no code to cover.
+      exclude: ['src/main.tsx', 'src/calculator/types.ts', 'src/test/**', 'src/**/*.test.{ts,tsx}'],
     },
   },
 })
