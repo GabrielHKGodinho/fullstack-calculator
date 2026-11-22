@@ -69,3 +69,21 @@ do only step 2 now and stop so i can review and commit
 
 # 12
 do only step 3 now and stop so i can review and commit
+
+# 13
+do only step 4 now and stop so i can review and commit
+
+# 14
+do only step 5 now and stop so i can review and commit
+
+# 15
+do only step 6 now and stop so i can review and commit
+
+# 16
+now the dockerfile and .dockerignore from spec 7. use distroless nonroot for the final image. build it, run it and show me it works and the image size, then stop it so i can review and commit
+
+# 17
+now generate the coverage report from spec 8 for both sides into docs/coverage, and show me the summary. stop so i can review and commit
+
+# 18
+now the readme from spec 9, short and easy to read. in the design decisions put what i decided in the plans and today, with the reason for each. dont touch PROMPTS.md. stop so i can review
